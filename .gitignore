@@ -1,0 +1,12 @@
+data
+old*
+result*
+*~
+
+
+*.pyc
+.ipynb_checkpoints
+*.gch
+*.d
+*.o
+

@@ -1,0 +1,16 @@
+1. grep for [[legacy]], and debug
+2. data format change: node_type & train/test (weight in train/test not used )
+3. emb_model: w learning
+4. support for network embedding only, or supervised task only, without input file constraint.
+5. whole candidate set evaluation?
+6. support for path selection
+7. reduce parameter? like lr_emb
+8. model save/loading, including node_type_weight, node biases, etc.
+
+
+mimic project:
+1. analyze the prediction results
+2. compare to other baselines
+3. path selection
+
+outbrain project:
