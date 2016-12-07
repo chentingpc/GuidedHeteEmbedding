@@ -12,25 +12,36 @@ int main(int argc, char **argv) {
   time_t start, end;
   char time_buffer[80];
   time(&start);
-  strftime(time_buffer, 80,"Start timestamp: %Y-%m-%d %I:%M:%S", localtime(&start));
+  strftime(time_buffer, 80, "Start timestamp: %Y-%m-%d %I:%M:%S", localtime(&start));
   printf("%s\n", time_buffer);
 
   Config conf(argc, argv);
 
 #ifdef PA_TASK
   printf("[INFO!] Current run on paper-author mode.\n");
+  EmbeddingModel* model;
   DataHelper data_helper = DataHelper(&conf);
-  data_helper.load_pa_trainortest(conf.train_file, conf.train_feature_file, true);
-  data_helper.load_pa_trainortest(conf.test_file, conf.test_feature_file, false);
-  data_helper.construct_group(false);
+  if (conf.train_file.size() * conf.train_feature_file.size() * \
+      conf.test_file.size() * conf.test_feature_file.size() == 0) {
+    conf.omega = -1;
+    printf("[WARNING] No train/test (feature) files are given, proceed without supervised model.\n");
+  }
+
   NodeSampler node_sampler = NodeSampler(data_helper.get_graph(), &conf);
   EdgeSampler edge_sampler = EdgeSampler(data_helper.get_graph());
-  SupervisedFeatureModel model = SupervisedFeatureModel(&data_helper, &node_sampler, &edge_sampler,
-                                                        conf.dim, &conf);
-  if (conf.embedding_infile.size() > 0)
-    model.load(conf.embedding_infile, conf.is_binary);
-  model.fit();
-  model.save(conf.embedding_outfile, conf.is_binary, conf.pred_file);
+  if (conf.omega < 0) {
+    model = new EmbeddingModel(&data_helper, &node_sampler, &edge_sampler, conf.dim, &conf);
+    if (conf.embedding_infile.size() > 0)
+      model->load(conf.embedding_infile, conf.is_binary);
+  } else {
+    data_helper.load_pa_trainortest(conf.train_file, conf.train_feature_file, true);
+    data_helper.load_pa_trainortest(conf.test_file, conf.test_feature_file, false);
+    data_helper.construct_group(false);
+    model = new SupervisedFeatureModel(&data_helper, &node_sampler, &edge_sampler, conf.dim, &conf);
+  }
+  model->fit();
+  model->save(conf.embedding_outfile, conf.is_binary, conf.pred_file);
+  delete model;
 #else
   // [[legacy]]
   printf("[INFO!] Current run on multi-task mode.\n");

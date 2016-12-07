@@ -58,17 +58,26 @@ _Note_:
 2. if this file is not given, default option is: all edge types have weight sum of 100000, bidirection, single embedding vector, sampling ratio 0.75 with 1 base degree.
 3. separator allowed: space.
 
-Data format for supervised ranking task
+Data format for supervised ranking task (optional)
 -----------------
+if you have no supervised task and are only interested at the network embedding, simply provide NO train/test files, the supervised model will be skipped.
+
 **train_target.txt & test_target.txt**
 
-for each line, (similar to libsvm format)
+for each line,
+
+```
+id target label
+```
+
+in the future, it will support (similar to libsvm format)
 
 ```
 id target_1:label target_2:label ...
 ```
 
-note:
+_Note_:
+
 1. target should be the node in network embedding, id does not need to be. (will change in the future)
 2. if only positive labels are given, negative samples are generated randomly.
 3. if negative labels are also given, negative samples are generated proportional to the magnitude of negative scores. (currently not supported)
@@ -76,10 +85,17 @@ note:
 **train_feature.txt & test_feature.txt**
 
 ```
+id feature weight
+```
+
+in the future, it will support
+
+```
 id feature_1:weight feature_2:weight ...
 ```
 
-note:
+_Note_:
+
 1. feature should be node in network embedding, id does not need to be. (will change in the future)
 
 Key parameters
@@ -87,7 +103,7 @@ Key parameters
 
 **omega**: network embedding task sampling rate, when given; if not, tasks are trained independently as per number of threads.
 
-**path_normalization, row_reweighting**: path_normalization set true when you want to keep all network of same weight sum (except specified by path_conf_file); row_reweighting can be used to smooth the neighbor distribution. default: 1, 0 (each path adjacency matrix will be normalized to a constant, and edge sampling is proportional to edge weight in each adjacency matrix).
+**lr_emb, reg_emb**: learning rate and regularization for embedding (set same for both network embedding and supervised task).
 
 **net_loss**: network embedding loss function, 0 for NCE/skip-gram objective, 1 for max-margin ranking objective. default 0.
 
@@ -95,18 +111,21 @@ Key parameters
 
 **path_conf_file**: see above, a file of configurations for network embedding.
 
-**supf_negative_by_sample, supf_neg_sampling_pow, supf_neg_base_deg**: first term specifies if to use negative sampling or directly use the negative candidate set (if prepared). When first term is 1, the latter two are similar to sampling_ratio_power and base_degree in network embedding, but used for pairs in supervised task. default: 1, 0, 1 (uniform dist over all authors).
+**supf_negative_by_sample, supf_neg_sampling_pow, supf_neg_base_deg**: first term specifies if to use negative sampling or directly use the negative candidate set (if prepared). When the first term is 0, will use prepared negative samples, and the last two terms don't matter. When the first term is 1, the latter two terms are similar to sampling_ratio_power and base_degree in network embedding. default: 1, 0, 1 (uniform dist over all authors).
 
-**learning rates and regularizations**:
+**path_normalization, row_reweighting (optional)**: path_normalization set true when you want to keep all network of same weight sum (except specified by path_conf_file); row_reweighting can be used to smooth the neighbor distribution. default: 1, 0 (each path adjacency matrix will be normalized to a constant, and edge sampling is proportional to edge weight in each adjacency matrix).
+
+**Detailed learning rates and regularizations (unnecessary for most cases)**:
 
 network embedding: *lr_net_emb, lr_net_w, lr_net_etype_bias, reg_net_emb*
 
 supervised task: *lr_supf_emb, lr_supf_ntype_w, lr_supf_nbias, reg_supf_emb*
 
-Guidelines:
-1. lr_net_emb == lr_supf_emb, eg_net_emb == reg_supf_emb.
-2. lr_net_etype_bias == 1/100ish lr_net_emb, lr_supf_ntype_w \approx lr_supf_ntype_w = 1/100ish lr_supf_emb.
-3. reg_net_emb and reg_supf_emb start from 0.
+By default with setting lr_emb and reg_emb:
+1. lr_emb == lr_net_emb == lr_supf_emb, reg_emb == reg_net_emb == reg_supf_emb.
+2. lr_net_etype_bias == 1/100ish lr_net_emb, lr_supf_ntype_w \approx lr_supf_nbias = 1/100ish lr_supf_emb.
+3. lr_net_w = 0.
+4. reg_net_emb and reg_supf_emb start from 0.
 
 Others
 ----------------------

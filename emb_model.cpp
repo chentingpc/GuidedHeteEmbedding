@@ -28,7 +28,7 @@ void EmbeddingModel::fit() {
   printf("Embedding training finished in %ld seconds.\n", (end - start));
 }
 
-void EmbeddingModel::save(string embedding_file, bool is_binary) {
+void EmbeddingModel::save(string embedding_file, bool is_binary, string pred_file) {
   if (embedding_file.size() == 0) {
     printf("[WARNING] embedding_file not saved due to no path given.\n");
     return;

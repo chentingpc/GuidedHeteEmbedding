@@ -99,7 +99,6 @@ class EmbeddingModel {
       return NULL;
   }
 
-  void fit();
 
   /**********************************************
    * Initializations
@@ -162,7 +161,11 @@ class EmbeddingModel {
     init_vector();
   }
 
-  void save(string embedding_file, bool is_binary);
+  virtual ~EmbeddingModel(){}
 
-  void load(string embedding_file, bool is_binary);
+  virtual void fit();
+
+  virtual void save(string embedding_file, bool is_binary, string pred_file = string());
+
+  virtual void load(string embedding_file, bool is_binary);
 };

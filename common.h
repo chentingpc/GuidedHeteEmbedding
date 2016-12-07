@@ -10,7 +10,7 @@ typedef unsigned long long uint64;
 
 const float NEG_SAMPLING_POWER = 0.75;  // unigram downweighted
 const int hash_table_size = 5e7;        // at least twice the size of num_vertices
-const int neg_table_size = 1e8;         // at least the size of sum_w / min_w
+const int neg_table_size = 3e8;         // at least the size of sum_w / min_w
 const double PATH_NORMALIZED_SUM_DEFAULT = 100000;  // avoid precision overflow
 
 const double LOG_MIN = 1e-15;           // Smoother for log

@@ -39,12 +39,14 @@ class Config {
     printf("supf_neg_sampling_pow %f\n", supf_neg_sampling_pow);
     printf("supf_neg_base_deg %f\n", supf_neg_base_deg);
     printf("supf_dropout %f\n", supf_dropout);
+    printf("lr_emb: %lf\n", lr_emb);
     printf("lr_net_emb: %lf\n", lr_net_emb);
     printf("lr_net_w %f\n", lr_net_w);
     printf("lr_supf_emb %f\n", lr_supf_emb);
     printf("lr_net_etype_bias %f\n", lr_net_etype_bias);
     printf("lr_supf_ntype_w %f\n", lr_supf_ntype_w);
     printf("lr_supf_nbias %f\n", lr_supf_nbias);
+    printf("reg_emb %f\n", reg_emb);
     printf("reg_net_emb %f\n", reg_net_emb);
     printf("reg_supf_emb %f\n", reg_supf_emb);
     printf("--------------------------------\n");
@@ -126,7 +128,6 @@ class Config {
 
  public:
   string network_file, node_type_file;
-  string train_group_file, test_group_file;
   string train_file, test_file, train_feature_file, test_feature_file;
   string embedding_infile, embedding_outfile, pred_file, path_file, path_conf_file;
   int is_binary, path_normalization, row_reweighting, num_threads, num_train_threads, map_topk;
@@ -134,6 +135,7 @@ class Config {
   int64 total_samples;
   int net_loss, supf_loss, path_line;
   real omega; // embedding task sampling rate
+  real lr_emb, reg_emb;
   real lr_net_emb, lr_net_w, lr_net_etype_bias, reg_net_emb;
   real lr_supf_emb, lr_supf_ntype_w, lr_supf_nbias, reg_supf_emb;
   real supf_negative_by_sampling;  // for supervised model if to use negative sampling
@@ -157,8 +159,9 @@ class Config {
     is_binary(0), path_normalization(true), row_reweighting(false), num_threads(1),
     num_train_threads(0), map_topk(10), dim(32), num_negative(5), total_samples(1),
     net_loss(0), supf_loss(0), path_line(0), omega(-1),
-    lr_net_emb(0.025), lr_net_w(0), lr_net_etype_bias(0), reg_net_emb(0),
-    lr_supf_emb(0.025), lr_supf_ntype_w(0), lr_supf_nbias(0), reg_supf_emb(0),
+    lr_emb(0.025), reg_emb(0),
+    lr_net_emb(-1), lr_net_w(-1), lr_net_etype_bias(-1), reg_net_emb(-1),
+    lr_supf_emb(-1), lr_supf_ntype_w(-1), lr_supf_nbias(-1), reg_supf_emb(-1),
     supf_negative_by_sampling(1), supf_neg_sampling_pow(0), supf_neg_base_deg(1),
     train_percent(1), supf_dropout(0), path_sum_default(PATH_NORMALIZED_SUM_DEFAULT),
     path_direction_default(PATH_DIRECTION_BIDIRECTION), path_order_default(PATH_ORDER_SINGLE),
@@ -214,12 +217,14 @@ class Config {
     if ((i = arg_pos((char *)"-supf_neg_sampling_pow", argc, argv)) > 0) supf_neg_sampling_pow = atof(argv[i + 1]);
     if ((i = arg_pos((char *)"-supf_neg_base_deg", argc, argv)) > 0) supf_neg_base_deg = atof(argv[i + 1]);
     if ((i = arg_pos((char *)"-omega", argc, argv)) > 0) omega = atof(argv[i + 1]);
+    if ((i = arg_pos((char *)"-lr_emb", argc, argv)) > 0) lr_emb = atof(argv[i + 1]);
     if ((i = arg_pos((char *)"-lr_net_emb", argc, argv)) > 0) lr_net_emb = atof(argv[i + 1]);
     if ((i = arg_pos((char *)"-lr_net_w", argc, argv)) > 0) lr_net_w = atof(argv[i + 1]);
     if ((i = arg_pos((char *)"-lr_supf_emb", argc, argv)) > 0) lr_supf_emb = atof(argv[i + 1]);
     if ((i = arg_pos((char *)"-lr_net_etype_bias", argc, argv)) > 0) lr_net_etype_bias = atof(argv[i + 1]);
     if ((i = arg_pos((char *)"-lr_supf_ntype_w", argc, argv)) > 0) lr_supf_ntype_w = atof(argv[i + 1]);
     if ((i = arg_pos((char *)"-lr_supf_nbias", argc, argv)) > 0) lr_supf_nbias = atof(argv[i + 1]);
+    if ((i = arg_pos((char *)"-reg_emb", argc, argv)) > 0) reg_emb = atof(argv[i + 1]);
     if ((i = arg_pos((char *)"-reg_net_emb", argc, argv)) > 0) reg_net_emb = atof(argv[i + 1]);
     if ((i = arg_pos((char *)"-reg_supf_emb", argc, argv)) > 0) reg_supf_emb = atof(argv[i + 1]);
     if ((i = arg_pos((char *)"-train_percent", argc, argv)) > 0) train_percent = atof(argv[i + 1]);
@@ -236,6 +241,16 @@ class Config {
         exit(-1);
       }
     }
+
+    // setting learning rates and regularization
+    if (lr_net_emb < 0) lr_net_emb = lr_emb;
+    if (lr_supf_emb < 0) lr_supf_emb = lr_emb;
+    if (lr_net_w < 0) lr_net_w = 0.;
+    if (lr_net_etype_bias < 0) lr_net_etype_bias = lr_net_emb / 100.;
+    if (lr_supf_ntype_w < 0) lr_supf_ntype_w = lr_supf_emb / 100.;
+    if (lr_supf_nbias < 0) lr_supf_nbias = lr_supf_emb / 100.;
+    if (reg_net_emb < 0) reg_net_emb = reg_emb;
+    if (reg_supf_emb < 0) reg_supf_emb = reg_emb;
 
     // other preprocessing
     srand(time(NULL));

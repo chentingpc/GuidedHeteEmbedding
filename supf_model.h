@@ -177,5 +177,9 @@ class SupervisedFeatureModel: public EmbeddingModel {
 
   void fit();
 
+  void load(string embedding_file, bool is_binary) {
+    printf("[WARNING] load function is not implemented for SupervisedFeatureModel.\n");
+  };
+
   void save(string embedding_file, bool is_binary, string pred_file);
 };

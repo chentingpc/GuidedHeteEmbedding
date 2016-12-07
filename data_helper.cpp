@@ -406,7 +406,7 @@ void DataHelper::load_pa_trainortest(string pa_file, string po_file, bool is_tra
         i / (double)(num_lines + 1) * 100, 13);
       fflush(stdout);
     }
-    continue;
+
     // if (is_training && label == 0) continue;  // debug
     if (non_vertex_name2id.find(name_v1) == non_vertex_name2id.end()) {
       src = ++max_non_vertices_id;
@@ -486,6 +486,16 @@ void DataHelper::load_pa_trainortest(string pa_file, string po_file, bool is_tra
   fclose(fin);
   if (count_unseen_features > 0)
     printf("[WARNING!!!!!] There are %d unseen features in test feature file. Please check!\n", count_unseen_features);
+
+  /* to delete debug
+  for (map<int, vector<int> >::iterator it = src_features->begin(); it != src_features->end(); it ++) {
+    printf("%s:\t", non_vertex_id2name[it->first].c_str());
+    for (vector<int>::iterator jt = it->second.begin(); jt != it->second.end(); jt ++) {
+      printf("\t%s", vertex[*jt].name);
+    }
+    printf("\n");
+  }
+  */
 
   // add author to features
   // also make sure all papers in pairs should have features
