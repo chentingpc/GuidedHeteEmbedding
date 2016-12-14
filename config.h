@@ -39,6 +39,7 @@ class Config {
     printf("supf_neg_sampling_pow %f\n", supf_neg_sampling_pow);
     printf("supf_neg_base_deg %f\n", supf_neg_base_deg);
     printf("supf_dropout %f\n", supf_dropout);
+    printf("supf_ignore_feat_weight %d\n", supf_ignore_feat_weight);
     printf("lr_emb: %lf\n", lr_emb);
     printf("lr_net_emb: %lf\n", lr_net_emb);
     printf("lr_net_w %f\n", lr_net_w);
@@ -130,8 +131,9 @@ class Config {
   string network_file, node_type_file;
   string train_file, test_file, train_feature_file, test_feature_file;
   string embedding_infile, embedding_outfile, pred_file, path_file, path_conf_file;
-  int is_binary, path_normalization, row_reweighting, num_threads, num_train_threads, map_topk;
-  int dim, num_negative;
+  int is_binary, path_normalization, num_threads, num_train_threads, row_reweighting;
+  real row_reweighting_power;
+  int map_topk, dim, num_negative;
   int64 total_samples;
   int net_loss, supf_loss, path_line;
   real omega; // embedding task sampling rate
@@ -141,6 +143,7 @@ class Config {
   real supf_negative_by_sampling;  // for supervised model if to use negative sampling
   real supf_neg_sampling_pow, supf_neg_base_deg;  // default is uniform distribution
   real train_percent, supf_dropout;
+  bool supf_ignore_feat_weight;
 
   vector<string> valid_paths;
   vector<float> path_weight;
@@ -156,14 +159,16 @@ class Config {
   bool use_path_conf;
 
   Config(int argc, char **argv):
-    is_binary(0), path_normalization(true), row_reweighting(false), num_threads(1),
-    num_train_threads(0), map_topk(10), dim(32), num_negative(5), total_samples(1),
+    is_binary(0), path_normalization(true), num_threads(1), num_train_threads(0),
+    row_reweighting(false), row_reweighting_power(NEG_SAMPLING_POWER),
+    map_topk(10), dim(32), num_negative(5), total_samples(1),
     net_loss(0), supf_loss(0), path_line(0), omega(-1),
     lr_emb(0.025), reg_emb(0),
     lr_net_emb(-1), lr_net_w(-1), lr_net_etype_bias(-1), reg_net_emb(-1),
     lr_supf_emb(-1), lr_supf_ntype_w(-1), lr_supf_nbias(-1), reg_supf_emb(-1),
     supf_negative_by_sampling(1), supf_neg_sampling_pow(0), supf_neg_base_deg(1),
-    train_percent(1), supf_dropout(0), path_sum_default(PATH_NORMALIZED_SUM_DEFAULT),
+    train_percent(1), supf_dropout(0), supf_ignore_feat_weight(false),
+    path_sum_default(PATH_NORMALIZED_SUM_DEFAULT),
     path_direction_default(PATH_DIRECTION_BIDIRECTION), path_order_default(PATH_ORDER_SINGLE),
     path_sampling_pow_default(NEG_SAMPLING_POWER), path_base_deg_default(1), use_path_conf(false) {
     int i;
@@ -204,6 +209,7 @@ class Config {
     if ((i = arg_pos((char *)"-binary", argc, argv)) > 0) is_binary = atoi(argv[i + 1]);
     if ((i = arg_pos((char *)"-path_normalization", argc, argv)) > 0) path_normalization = atoi(argv[i + 1]);
     if ((i = arg_pos((char *)"-row_reweighting", argc, argv)) > 0) row_reweighting = atoi(argv[i + 1]);
+    if ((i = arg_pos((char *)"-row_reweighting_power", argc, argv)) > 0) row_reweighting_power = atof(argv[i + 1]);
     // training related
     if ((i = arg_pos((char *)"-threads", argc, argv)) > 0) num_threads = atoi(argv[i + 1]);
     if ((i = arg_pos((char *)"-train_threads", argc, argv)) > 0) num_train_threads = atoi(argv[i + 1]);
@@ -229,6 +235,7 @@ class Config {
     if ((i = arg_pos((char *)"-reg_supf_emb", argc, argv)) > 0) reg_supf_emb = atof(argv[i + 1]);
     if ((i = arg_pos((char *)"-train_percent", argc, argv)) > 0) train_percent = atof(argv[i + 1]);
     if ((i = arg_pos((char *)"-supf_dropout", argc, argv)) > 0) supf_dropout = atof(argv[i + 1]);
+    if ((i = arg_pos((char *)"-supf_ignore_feat_weight", argc, argv)) > 0) supf_ignore_feat_weight = atoi(argv[i + 1]);
     total_samples *= 1000000;
 
     // simple preprocessing

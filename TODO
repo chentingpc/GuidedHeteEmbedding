@@ -1,7 +1,10 @@
 TODO:
 
 1. grep for [[legacy]], and debug
-2. data format change: node_type & train/test (weight in train/test not used )
-3. whole candidate set evaluation (directly incorporated)
-4. richer supervised loss (e.g. logistic loss), and evaluation metrics
-5. add demo
+2. add demo
+3. change repository name to "GuidedHNE" and make public.
+
+4. data format change: node_type & train/test (weight in train/test not used )
+5. whole candidate set evaluation (directly incorporated)
+6. richer supervised loss (e.g. logistic loss), and evaluation metrics
+

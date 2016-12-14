@@ -46,15 +46,15 @@ class DataHelper : public VertexHashTable {
   vector<int>             train_group;
   vector<pair<int, int> > train_pairs;
   vector<real>            train_pairs_label;
-  map<int, vector<int> >  train_src_features;
-  map<int, vector<int> >  train_dst_features;
+  map<int, vector<pair<int, real> > >  train_src_features;
+  map<int, vector<pair<int, real> > >  train_dst_features;
   vector<int>             test_group;         // each element specify the group size for ranking
   vector<pair<int, int> > test_pairs;         // test pairs, can be nodes or features
   vector<real>            test_pairs_label;   // labels for test pairs, if any
   vector<string>          test_pairs_type;    // task type of test pairs, if any
   vector<int>             test_pairs_etype;   // task type as edge type of test pairs
-  map<int, vector<int> >  test_src_features;  // features (node indexes) for src nodes (LHS)
-  map<int, vector<int> >  test_dst_features;  // features (node indexes) for dst nodes (RHS)
+  map<int, vector<pair<int, real> > >  test_src_features;  // features (node indexes) for src nodes (LHS)
+  map<int, vector<pair<int, real> > >  test_dst_features;  // features (node indexes) for dst nodes (RHS)
   map<string, pair<int, int> >
                           test_task_group_start_end;
 
@@ -195,11 +195,11 @@ class DataHelper : public VertexHashTable {
     return &train_pairs_label;
   }
 
-  const map<int, vector<int> > * get_train_src_features() {
+  const map<int, vector<pair<int, real> > > * get_train_src_features() {
     return &train_src_features;
   }
 
-  const map<int, vector<int> > * get_train_dst_features() {
+  const map<int, vector<pair<int, real> > > * get_train_dst_features() {
     return &train_dst_features;
   }
 
@@ -223,11 +223,11 @@ class DataHelper : public VertexHashTable {
     return &test_pairs_etype;
   }
 
-  const map<int, vector<int> > * get_test_src_features() {
+  const map<int, vector<pair<int, real> > > * get_test_src_features() {
     return &test_src_features;
   }
 
-  const map<int, vector<int> > * get_test_dst_features() {
+  const map<int, vector<pair<int, real> > > * get_test_dst_features() {
     return &test_dst_features;
   }
 

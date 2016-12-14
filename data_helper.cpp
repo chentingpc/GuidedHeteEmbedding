@@ -196,6 +196,7 @@ void DataHelper::load_network() {
   }
 
   // re-weighting each row for each network
+  // note the sampler.h will base on new edge weights for computing node/edge sampler
   if (conf_p->row_reweighting) {
     double **_edge_type_degree = new double*[num_edge_type];
     for (int i = 0; i < num_edge_type; i++) {
@@ -205,9 +206,10 @@ void DataHelper::load_network() {
     for (int64 i = 0; i < num_edges; i++) {
       _edge_type_degree[edge_type[i]][edge_source_id[i]] += edge_weight[i];
     }
+    float weighting_power = conf_p->row_reweighting_power;
     for (int64 i = 0; i < num_edges; i++) {
       double deg = _edge_type_degree[edge_type[i]][edge_source_id[i]];
-      edge_weight[i] = pow(edge_weight[i] / deg, NEG_SAMPLING_POWER);  // reweighting function
+      edge_weight[i] = pow(edge_weight[i] / deg, weighting_power);  // reweighting function
     }
     for (int i = 0; i < num_edge_type; i++) delete []_edge_type_degree[i];
   }
@@ -363,7 +365,7 @@ void DataHelper::load_pa_trainortest(string pa_file, string po_file, bool is_tra
   char name_v1[MAX_STRING], name_v2[MAX_STRING], line_buffer[MAX_LINE_LEN];
   int src, dst;
   int64 num_lines = 0;
-  float label = 0;
+  float label = 0, feat_w = 0;
   int max_non_vertices_id = -1;
   time_t start, end;
   start = clock();
@@ -372,7 +374,7 @@ void DataHelper::load_pa_trainortest(string pa_file, string po_file, bool is_tra
   // vector<int>             *group, *target_group;
   vector<pair<int, int> > *pairs;
   vector<real>            *pairs_label;
-  map<int, vector<int> >  *src_features, *dst_features;
+  map<int, vector<pair<int, real> > >  *src_features, *dst_features;
 
   if (is_training) {
     trainortest_name = "train";
@@ -435,14 +437,16 @@ void DataHelper::load_pa_trainortest(string pa_file, string po_file, bool is_tra
 
   // load paper to features
   int count_unseen_features = 0;
+  bool ignore_feat_w = conf_p->supf_ignore_feat_weight;
   fin = fopen(po_file.c_str(), "rb");
   for (int64 i = 0; i != num_lines; i++) {
-    fscanf(fin, "%s %s %f", name_v1, name_v2, &label);
+    fscanf(fin, "%s %s %f", name_v1, name_v2, &feat_w);
     if (i % 10000 == 0) {
       printf("Reading %s_p2o lines: %.3lf%%%c", trainortest_name.c_str(),
         i / (double)(num_lines + 1) * 100, 13);
       fflush(stdout);
     }
+    if (ignore_feat_w) feat_w = 1;
     // map src and dst nodes
     if (non_vertex_name2id.find(name_v1) == non_vertex_name2id.end()) {
       src = ++max_non_vertices_id;
@@ -458,44 +462,24 @@ void DataHelper::load_pa_trainortest(string pa_file, string po_file, bool is_tra
     }
     assert(dst != -1);
 
-    // insert features, taking more than half of the loading time
-    /* this is real slow
-    if (src_features->find(src) != src_features->end()) {
-      src_features->at(src).push_back(dst);
-    } else {
-      // the key does not exist in the map
-      vector<int> f_vec(dst);
-      src_features->insert(make_pair(src, f_vec));
-    }
-    */
     int k = src;
     int f = dst;
-    map<int, vector<int> >::iterator lb = src_features->lower_bound(k);
+    map<int, vector<pair<int, real> > >::iterator lb = src_features->lower_bound(k);
 
     if(lb != src_features->end() && !(src_features->key_comp()(k, lb->first))) {
       // key already exists
-      lb->second.push_back(f);
+      lb->second.push_back(make_pair(f, feat_w));
     }
     else {
       // the key does not exist in the map
-      vector<int> f_vec;
-      f_vec.push_back(f);
-      src_features->insert(lb, map<int, vector<int> >::value_type(k, f_vec));
+      vector<pair<int, real> > f_vec;
+      f_vec.push_back(make_pair(f, feat_w));
+      src_features->insert(lb, map<int, vector<pair<int, real> > >::value_type(k, f_vec));
     }
   }
   fclose(fin);
   if (count_unseen_features > 0)
     printf("[WARNING!!!!!] There are %d unseen features in test feature file. Please check!\n", count_unseen_features);
-
-  /* to delete debug
-  for (map<int, vector<int> >::iterator it = src_features->begin(); it != src_features->end(); it ++) {
-    printf("%s:\t", non_vertex_id2name[it->first].c_str());
-    for (vector<int>::iterator jt = it->second.begin(); jt != it->second.end(); jt ++) {
-      printf("\t%s", vertex[*jt].name);
-    }
-    printf("\n");
-  }
-  */
 
   // add author to features
   // also make sure all papers in pairs should have features
@@ -504,8 +488,8 @@ void DataHelper::load_pa_trainortest(string pa_file, string po_file, bool is_tra
     int paper = it->first;
     int author = it->second;
     if (dst_features->find(author) == dst_features->end()) {
-      vector<int> a_vec;
-      a_vec.push_back(author);
+      vector<pair<int, real> > a_vec;
+      a_vec.push_back(make_pair(author, 1));  // each author has weight 1
       (*dst_features)[author] = a_vec;
     }
     assert(src_features->find(paper) != src_features->end());
@@ -706,13 +690,13 @@ void DataHelper::_check_pa_test_data() {
     printf("%s %s %.2f\n", non_vertex_id2name.at(src).c_str(), vertex[dst].name, label);
   }
 
-  for (map<int, vector<int> >::const_iterator it = test_src_features.begin();
+  for (map<int, vector<pair<int, real> > >::const_iterator it = test_src_features.begin();
       it != test_src_features.end(); ++it) {
     const int &paper = it->first;
-    const vector<int> &features = it->second;
+    const vector<pair<int, real> > &features = it->second;
     printf("%s:", non_vertex_id2name.at(paper).c_str());
     for (size_t i = 0; i < features.size(); i++) {
-      printf("\t%s", vertex[features[i]].name);
+      printf("\t%s:%f", vertex[features[i].first].name, features[i].second);
     }
     printf("\n");
   }

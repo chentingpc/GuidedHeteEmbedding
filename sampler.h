@@ -140,7 +140,7 @@ class NodeSampler {
   }
 
   // calculate degree of node of n_type using edegs of e_type, store in vertex_degree
-  void cal_degree(double *vertex_degree, const int &e_type, const int &n_type) {
+  void cal_degree(double *vertex_degree, int e_type, int n_type, bool check_type = true) {
     int src, dst, this_e_type, src_type, dst_type;
     double w, base_deg, min_deg = 1e9;
     memset(vertex_degree, 0, num_vertices * sizeof(double));
@@ -150,16 +150,16 @@ class NodeSampler {
       dst = edge_target_id[i];
       w = edge_weight[i];
       this_e_type = edge_type[i];
-      if (this_e_type != e_type)
+      if (check_type && this_e_type != e_type)
         continue;
       if (w < min_deg)
         min_deg = w;
       src_type = vertex_type[src];
       dst_type = vertex_type[dst];
-      if (src_type == n_type) {
+      if (!check_type || src_type == n_type) {
         vertex_degree[src] += w;
       }
-      if (dst_type == n_type) {
+      if (!check_type || dst_type == n_type) {
         vertex_degree[dst] += w;
       }
     }
@@ -211,9 +211,9 @@ class NodeSampler {
   void init_neg_table() {
     neg_table = new int[neg_table_size];
     double *vertex_degree = new double [num_vertices];
-    for (int i = 0; i < num_vertices; i++) {
-      vertex_degree[i] = vertex[i].degree;
-    }
+    // for (int i = 0; i < num_vertices; i++)
+    //  vertex_degree[i] = vertex[i].degree;
+    cal_degree(vertex_degree, -1, -1, false);  // calculate with edges in case edge re-weighting
     set_table(neg_table, vertex_degree, conf_p->path_sampling_pow_default);
     delete []vertex_degree;
   }

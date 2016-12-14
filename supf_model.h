@@ -15,6 +15,8 @@
 #include "./metrics.h"
 using namespace std;
 
+typedef vector<pair<int, real> > vecOfIntReal;
+
 const int IS_SRC_TRAIN = 0;         // constants for indicating condition
 const int IS_SRC_TEST = 1;
 const int IS_DST_TRAIN = 2;
@@ -31,10 +33,10 @@ class SupervisedFeatureModel: public EmbeddingModel {
   bool                          *train_dst_feat_has_node_type;  // each is an array
   bool                          *test_src_feat_has_node_type;   // n_type -> ture/false
   bool                          *test_dst_feat_has_node_type;
-  int                           *train_src_feat_node_type_cnt;  // number of feature instances in each node type,
-  int                           *train_dst_feat_node_type_cnt;  // for a given node in the train/test features
-  int                           *test_src_feat_node_type_cnt;   // matrix of i-th node to j-th n_type
-  int                           *test_dst_feat_node_type_cnt;   // indexed by [i * num_node_type + j]
+  real                           *train_src_feat_node_type_cnt;  // number of feature instances in each node type,
+  real                           *train_dst_feat_node_type_cnt;  // for a given node in the train/test features
+  real                           *test_src_feat_node_type_cnt;   // matrix of i-th node to j-th n_type
+  real                           *test_dst_feat_node_type_cnt;   // indexed by [i * num_node_type + j]
   vector<real>                  pred;
   GSLRandUniform                gsl_rand;
 
@@ -52,8 +54,8 @@ class SupervisedFeatureModel: public EmbeddingModel {
   const vector<int>             *train_group_p;
   const vector<pair<int, int> > *train_pairs_p;
   const vector<real>            *train_pairs_label_p;
-  const map<int, vector<int> >  *train_src_features_p;
-  const map<int, vector<int> >  *train_dst_features_p;
+  const map<int, vecOfIntReal>  *train_src_features_p;
+  const map<int, vecOfIntReal>  *train_dst_features_p;
   vector<int>                   train_pairs_pos;            // element is entry for pos train_pairs
   map<int, vector<int> >        train_pairs_neg_by_src;     // given src, return a train_pairs_neg
   NodeSampler                   *neg_author_sampler;
@@ -71,8 +73,8 @@ class SupervisedFeatureModel: public EmbeddingModel {
   const vector<pair<int, int> > *test_pairs_p;
   vector<pair<int, int> >       test_pairs_dup;
   const vector<real>            *test_pairs_label_p;
-  const map<int, vector<int> >  *test_src_features_p;
-  const map<int, vector<int> >  *test_dst_features_p;
+  const map<int, vecOfIntReal>  *test_src_features_p;
+  const map<int, vecOfIntReal>  *test_dst_features_p;
 
   /**********************************************
    * Work scheduler and helpers
@@ -103,8 +105,8 @@ class SupervisedFeatureModel: public EmbeddingModel {
   // only keep train_percent of groups in train data
   void _down_sample_train_data(real train_percent);
 
-  void _build_feature_node_type_cnt(const map<int, vector<int> > *features_p,
-      bool *&feat_has_node_type, int *&feat_node_type_cnt);
+  void _build_feature_node_type_cnt(const map<int, vecOfIntReal > *features_p,
+      bool *&feat_has_node_type, real *&feat_node_type_cnt);
 
   void init_variables();
 
@@ -136,7 +138,7 @@ class SupervisedFeatureModel: public EmbeddingModel {
   // simply compute the feature vector of a node by averaging all its features' embedding
   // features: node's features (other nodes in network)
   // vec: node's feature vector
-  inline void _get_averaged_node_vector(const vector<int> &features, real *vec);
+  inline void _get_averaged_node_vector(const vecOfIntReal &features, real *vec);
 
   inline void _update_fpa(const int &src, const int &dst, const real &score_err,
     const real *src_vec, const real *src_vec_int, const real *dst_vec, const real *dst_vec_int,

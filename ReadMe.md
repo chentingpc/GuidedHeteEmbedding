@@ -1,3 +1,6 @@
+Introduction
+-----------------
+This is a CPU-based multi-thread implementation of Task-guided and Path-augmented Heterogeneous Network Embedding.
 
 Data format for network embedding
 -----------------
@@ -114,6 +117,10 @@ Key parameters
 **supf_negative_by_sample, supf_neg_sampling_pow, supf_neg_base_deg**: first term specifies if to use negative sampling or directly use the negative candidate set (if prepared). When the first term is 0, will use prepared negative samples, and the last two terms don't matter. When the first term is 1, the latter two terms are similar to sampling_ratio_power and base_degree in network embedding. default: 1, 0, 1 (uniform dist over all authors).
 
 **path_normalization, row_reweighting (optional)**: path_normalization set true when you want to keep all network of same weight sum (except specified by path_conf_file); row_reweighting can be used to smooth the neighbor distribution. default: 1, 0 (each path adjacency matrix will be normalized to a constant, and edge sampling is proportional to edge weight in each adjacency matrix).
+
+**supf_dropout**: randomly dropout rate for features. default 0.
+
+**supf_ignore_feat_weight**: if to ignore the weights in input features. default 0.
 
 **Detailed learning rates and regularizations (unnecessary for most cases)**:
 

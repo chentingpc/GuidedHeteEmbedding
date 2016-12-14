@@ -127,7 +127,7 @@ void SupervisedFeatureModel::init_variables() {
 
   dropout = conf_p->supf_dropout;
   if (dropout > 0) {
-    for (map<int, vector<int> >::const_iterator it = train_src_features_p->begin();
+    for (map<int, vecOfIntReal>::const_iterator it = train_src_features_p->begin();
         it != train_src_features_p->end(); it++) {
       int feature_size = it->second.size();
       if (feature_size > max_src_feat_size)
@@ -275,25 +275,25 @@ void SupervisedFeatureModel::init_runtime() {
   }
 }
 
-void SupervisedFeatureModel::_build_feature_node_type_cnt(const map<int, vector<int> > *features_p,
-    bool *&feat_has_node_type, int *&feat_node_type_cnt) {
+void SupervisedFeatureModel::_build_feature_node_type_cnt(const map<int, vecOfIntReal> *features_p,
+    bool *&feat_has_node_type, real *&feat_node_type_cnt) {
   // init
   int max_key_p1 = features_p->rbegin()->first + 1;  // get the largest key (can be larger than num_vertices)
   feat_has_node_type = new bool[num_node_type];
-  feat_node_type_cnt = new int[num_node_type * max_key_p1];
+  feat_node_type_cnt = new real[num_node_type * max_key_p1];
   memset(feat_has_node_type, 0, sizeof(bool) * num_node_type);
-  memset(feat_node_type_cnt, 0, sizeof(int) * num_node_type * max_key_p1);
+  memset(feat_node_type_cnt, 0, sizeof(real) * num_node_type * max_key_p1);
 
-  // count it
-  for (map<int, vector<int> >::const_iterator it = features_p->begin();
+  // count it with weights
+  for (map<int, vecOfIntReal>::const_iterator it = features_p->begin();
       it != features_p->end(); it++) {
     int n = it->first;
     assert(n < max_key_p1);
-    const vector<int> &the_features = it->second;
-    for (vector<int>::const_iterator jt = the_features.begin(); jt < the_features.end(); jt++) {
-      int n_type = vertex_type[*jt];
+    const vecOfIntReal &the_features = it->second;
+    for (vecOfIntReal::const_iterator jt = the_features.begin(); jt < the_features.end(); jt++) {
+      int n_type = vertex_type[jt->first];
       feat_has_node_type[n_type] = true;
-      feat_node_type_cnt[n * num_node_type + n_type]++;
+      feat_node_type_cnt[n * num_node_type + n_type] += jt->second;
     }
   }
 }
@@ -506,8 +506,8 @@ inline void SupervisedFeatureModel::_update_fpa(const int &src, const int &dst,
 
 inline void SupervisedFeatureModel::_update_node_weight_or_embedding(const int &node,
     const int &is_src_train, real *pre_vec_err, int choice, bool *ignore_feats) {
-  const vector<int> *features;
-  int *this_feat_node_type_cnt;
+  const vecOfIntReal *features;
+  real *this_feat_node_type_cnt;
   switch (is_src_train) {
     case IS_SRC_TRAIN:
       features = &train_src_features_p->at(node);
@@ -531,51 +531,49 @@ inline void SupervisedFeatureModel::_update_node_weight_or_embedding(const int &
   }
   if (choice == 0) {
     // update node weight
-    for (vector<int>::const_iterator it = features->begin(); it != features->end(); it++) {
-      int n_type = vertex_type[*it];
-      int f_cnt = this_feat_node_type_cnt[n_type];
-      // assert(f_cnt > 0);  // ensure the f_cnt is non_negative
+    for (vecOfIntReal::const_iterator it = features->begin(); it != features->end(); it++) {
+      int n_type = vertex_type[it->first];
+      real f_cnt = it->second / this_feat_node_type_cnt[n_type];
       real w_nt = weights_node_type[n_type];
-      real *vec = &emb_vertex[*it * dim];
+      real *vec = &emb_vertex[it->first * dim];
       real err = 0;
-      for (int k = 0; k < dim; k++) err += pre_vec_err[k] * vec[k] * w_nt / f_cnt;
-      weights_node[*it] += 0.01 * lr_supf_emb * (err - reg_supf_emb * weights_node[*it]);  // hazard
+      for (int k = 0; k < dim; k++) err += pre_vec_err[k] * vec[k] * w_nt * f_cnt;
+      weights_node[it->first] += 0.01 * lr_supf_emb * (err - reg_supf_emb * weights_node[it->first]);  // hazard
     }
   } else if (choice == 1) {
     // update node embedding
     if (ignore_feats) {
-      int *f_cnts = new int[num_node_type];
-      memset(f_cnts, 0, sizeof(int) * num_node_type);
+      real *f_cnts = new real[num_node_type];
+      memset(f_cnts, 0, sizeof(real) * num_node_type);
       int i = -1;
-      for (vector<int>::const_iterator it = features->begin(); it != features->end(); it++) {
+      for (vecOfIntReal::const_iterator it = features->begin(); it != features->end(); it++) {
         i++;
         if (ignore_feats[i]) continue;
-        int n_type = vertex_type[*it];
-        f_cnts[n_type]++;
+        int n_type = vertex_type[it->first];
+        f_cnts[n_type] += it->second;
       }
       i = -1;
-      for (vector<int>::const_iterator it = features->begin(); it != features->end(); it++) {
+      for (vecOfIntReal::const_iterator it = features->begin(); it != features->end(); it++) {
         i++;
         if (ignore_feats[i]) continue;
-        int n_type = vertex_type[*it];
-        int f_cnt = f_cnts[n_type];
+        int n_type = vertex_type[it->first];
+        real f_cnt = it->second / f_cnts[n_type];
         real w_nt = weights_node_type[n_type];
-        real *vec = &emb_vertex[*it * dim];
-        real w_n =  weights_node[*it];
+        real *vec = &emb_vertex[it->first * dim];
+        real w_n =  weights_node[it->first];
         for (int k = 0; k < dim; k++)
-          vec[k] += lr_supf_emb * (pre_vec_err[k] * w_nt * w_n / f_cnt - reg_supf_emb * vec[k]);
+          vec[k] += lr_supf_emb * (pre_vec_err[k] * w_nt * w_n * f_cnt - reg_supf_emb * vec[k]);
       }
       delete [] f_cnts;
     } else {
-      for (vector<int>::const_iterator it = features->begin(); it != features->end(); it++) {
-        int n_type = vertex_type[*it];
-        int f_cnt = this_feat_node_type_cnt[n_type];
-        // assert(f_cnt > 0);  // ensure the f_cnt is non_negative
+      for (vecOfIntReal::const_iterator it = features->begin(); it != features->end(); it++) {
+        int n_type = vertex_type[it->first];
+        real f_cnt = it->second / this_feat_node_type_cnt[n_type];
         real w_nt = weights_node_type[n_type];
-        real *vec = &emb_vertex[*it * dim];
-        real w_n =  weights_node[*it];
+        real *vec = &emb_vertex[it->first * dim];
+        real w_n =  weights_node[it->first];
         for (int k = 0; k < dim; k++)
-          vec[k] += lr_supf_emb * (pre_vec_err[k] * w_nt * w_n / f_cnt - reg_supf_emb * vec[k]);
+          vec[k] += lr_supf_emb * (pre_vec_err[k] * w_nt * w_n * f_cnt - reg_supf_emb * vec[k]);
       }
     }
   } else {
@@ -587,8 +585,8 @@ inline void SupervisedFeatureModel::_update_node_weight_or_embedding(const int &
 inline void SupervisedFeatureModel::_get_weighted_node_vector(const int &node,
     const int &is_src_train, real *vec_int, real *vec, bool *ignore_feats) {
   // average feature vectors of the same node type into vec_int
-  const vector<int> *features;
-  int *this_feat_node_type_cnt;
+  const vecOfIntReal *features;
+  real *this_feat_node_type_cnt;
   bool *feat_has_node_type;
   switch (is_src_train) {
     case IS_SRC_TRAIN:
@@ -617,36 +615,35 @@ inline void SupervisedFeatureModel::_get_weighted_node_vector(const int &node,
   }
   memset(vec_int, 0, sizeof(real) * num_node_type * dim);
   if (ignore_feats) {
-    int *f_cnts = new int[num_node_type];
-    memset(f_cnts, 0, sizeof(int) * num_node_type);
+    real *f_cnts = new real[num_node_type];
+    memset(f_cnts, 0, sizeof(real) * num_node_type);
     int i = -1;
-    for (vector<int>::const_iterator it = features->begin(); it != features->end(); it++) {
+    for (vecOfIntReal::const_iterator it = features->begin(); it != features->end(); it++) {
       i++;
       if (ignore_feats[i]) continue;
-      int n_type = vertex_type[*it];
-      f_cnts[n_type]++;
+      int n_type = vertex_type[it->first];
+      f_cnts[n_type] += it->second;
     }
     i = -1;
-    for (vector<int>::const_iterator it = features->begin(); it != features->end(); it++) {
+    for (vecOfIntReal::const_iterator it = features->begin(); it != features->end(); it++) {
       i++;
       if (ignore_feats[i]) continue;
-      int n_type = vertex_type[*it];
-      int f_cnt = f_cnts[n_type];
-      real w = weights_node[*it];
-      real *vec_temp_from = &emb_vertex[*it * dim];
+      int n_type = vertex_type[it->first];
+      real f_cnt = it->second / f_cnts[n_type];
+      real w = weights_node[it->first];
+      real *vec_temp_from = &emb_vertex[it->first * dim];
       real *vet_temp_to = &vec_int[n_type * dim];
-      for (int k = 0; k < dim; k++) vet_temp_to[k] += vec_temp_from[k] / f_cnt *  w;
+      for (int k = 0; k < dim; k++) vet_temp_to[k] += vec_temp_from[k] * f_cnt *  w;
     }
     delete [] f_cnts;
   } else {
-    for (vector<int>::const_iterator it = features->begin(); it != features->end(); it++) {
-      int n_type = vertex_type[*it];
-      int f_cnt = this_feat_node_type_cnt[n_type];
-      // assert(f_cnt > 0);  // ensure the f_cnt is non_negative
-      real w = weights_node[*it];
-      real *vec_temp_from = &emb_vertex[*it * dim];
+    for (vecOfIntReal::const_iterator it = features->begin(); it != features->end(); it++) {
+      int n_type = vertex_type[it->first];
+      real f_cnt = it->second / this_feat_node_type_cnt[n_type];
+      real w = weights_node[it->first];
+      real *vec_temp_from = &emb_vertex[it->first * dim];
       real *vet_temp_to = &vec_int[n_type * dim];
-      for (int k = 0; k < dim; k++) vet_temp_to[k] += vec_temp_from[k] / f_cnt *  w;
+      for (int k = 0; k < dim; k++) vet_temp_to[k] += vec_temp_from[k] * f_cnt *  w;
     }
   }
 
@@ -660,14 +657,18 @@ inline void SupervisedFeatureModel::_get_weighted_node_vector(const int &node,
   }
 }
 
-inline void SupervisedFeatureModel::_get_averaged_node_vector(const vector<int> &features,
+inline void SupervisedFeatureModel::_get_averaged_node_vector(const vecOfIntReal &features,
     real *vec) {
-  int src_fsize = features.size();
+  real feat_sum = 0;
   memset(vec, 0, sizeof(real) * dim);
-  for (vector<int>::const_iterator it = features.begin(); it != features.end(); ++it) {
-    real *vec_temp = &emb_vertex[(*it) * dim];
+  for (vecOfIntReal::const_iterator it = features.begin(); it != features.end(); ++it) {
+    feat_sum += it->second;
+  }
+  for (vecOfIntReal::const_iterator it = features.begin(); it != features.end(); ++it) {
+    real *vec_temp = &emb_vertex[it->first * dim];
+    real f_cnt = it->second / feat_sum;
     for (int k = 0; k < dim; k++) {
-      vec[k] += vec_temp[k] / src_fsize;
+      vec[k] += vec_temp[k] * f_cnt;
     }
   }
 }
