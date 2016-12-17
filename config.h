@@ -115,7 +115,7 @@ class Config {
         float sampling_pow = atof(tuples[4].c_str());
         float base_deg = atof(tuples[5].c_str());
         valid_paths.push_back(path);
-        // debug, randomly reset paths
+        // trick, randomly reset paths
         // if (rand() / static_cast<double>(RAND_MAX) < 0.5) weight = 0;
         path_weight.push_back(weight);
         path_direction.push_back(direction);

@@ -1,6 +1,6 @@
 Introduction
 -----------------
-This is a CPU-based multi-thread implementation of Task-guided and Path-augmented Heterogeneous Network Embedding.
+This is a CPU-based multi-thread implementation of Task-guided and Path-augmented Heterogeneous Network Embedding in paper "[Task-Guided and Path-Augmented Heterogeneous Network Embedding for Author Identification](https://arxiv.org/abs/1612.02814)". Check out the demo/ for running.
 
 Data format for network embedding
 -----------------

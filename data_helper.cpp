@@ -286,7 +286,6 @@ void DataHelper::load_node_type() {
         vertex_type = (int *)realloc(vertex_type, vertex_type_size * sizeof(int));
       }
     }
-    // if (vid == -1) continue;  // debug
     if (node_name2type.find(type_name) == node_name2type.end()) {
       type = num_node_type++;
       node_name2type[type_name] = type;
@@ -409,7 +408,6 @@ void DataHelper::load_pa_trainortest(string pa_file, string po_file, bool is_tra
       fflush(stdout);
     }
 
-    // if (is_training && label == 0) continue;  // debug
     if (non_vertex_name2id.find(name_v1) == non_vertex_name2id.end()) {
       src = ++max_non_vertices_id;
       non_vertex_name2id[name_v1] = src;
@@ -458,7 +456,9 @@ void DataHelper::load_pa_trainortest(string pa_file, string po_file, bool is_tra
     dst = search_hash_table(name_v2, vertex);
     if (dst == -1 && !is_training) {
       count_unseen_features++;
-      continue; // debug, ignore all features only appear in test, could be the new year, hazard
+      printf("[TERMINATED] New features only appeared in test found. You can ignore it by commenting the source code.");
+      exit(0);
+      // continue; // trick, ignore all features only appear in test
     }
     assert(dst != -1);
 
@@ -632,7 +632,7 @@ void DataHelper::load_test(string test_file) {
     }
 
     src = search_hash_table(name_v1, vertex);
-    if (src == -1) {skip++; continue;}  // debug, not big deal, just ignore unseen nodes
+    if (src == -1) {skip++; continue;}  // trick, not big deal, just ignore unseen nodes
     // if (src == -1) printf("%s\n", name_v1);
     // assert(src != -1);
     dst = search_hash_table(name_v2, vertex);

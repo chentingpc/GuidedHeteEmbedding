@@ -77,7 +77,6 @@ void SupervisedFeatureModel::save(string embedding_file, bool is_binary, string 
   FILE *fo = fopen(pred_file.c_str(), "wb");
   assert(fo != NULL);
   for (size_t i = 0; i < pred.size(); i++) {
-    // const pair<int, int> &the_test_pair = (*test_pairs_p)[i];  // debug
     const pair<int, int> &the_test_pair = test_pairs_dup[i];
     fprintf(fo, "%s\t%s\t%f\t%f\n", non_vertex_id2name->at(the_test_pair.first).c_str(),  // paper using input id
       vertex[the_test_pair.second].name, (*test_pairs_label_p)[i], pred[i]);
@@ -242,7 +241,7 @@ void SupervisedFeatureModel::init_runtime() {
       pairs_label_p = test_pairs_label_p;
       _author_sampler = &test_neg_author_sampler;
       step_cont++;
-      // goto _construct_sampler;  // debug, normally we don't need test_neg_author_sampler
+      // goto _construct_sampler;  // trick, normally we don't need test_neg_author_sampler
     }
   }
   if (negative_by_sampling < NEG_BY_SAMPLING_TOP) {
@@ -694,7 +693,7 @@ const vector<real> & SupervisedFeatureModel::predict(int choice) {
 
     // normally evaluation based on provided test file which includes both pos and neg instances
     // if (test_neg_author_sampler != NULL && (*test_pairs_label_p)[i] == 0) {
-    //  dst = test_neg_author_sampler->sample(n_seed);  // random sample negative, debug
+    //  dst = test_neg_author_sampler->sample(n_seed);  // random sample negative, trick
     //  test_pairs_dup[i].second = dst;
     // }
 
