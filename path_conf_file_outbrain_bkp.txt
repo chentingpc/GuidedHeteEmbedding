@@ -1,9 +1,0 @@
-campaign_id.advertiser_id 10000.0 reverse single 0.75 1
-campaign_id.document_id 10000.0 reverse single 0.75 1
-document_id.category_id 10000.0 normal single 0.75 1
-document_id.entity_id 10000.0 normal single 0.75 1
-document_id.publisher_id 0000.0 normal single 0.75 1
-document_id.source_id 0000.0 normal single 0.75 1
-document_id.topic_id 0000.0 normal single 0.75 1
-user-view-doc 10000.0 normal single 0.75 1
-user-2-campaign 10000.0 normal single 0.75 1

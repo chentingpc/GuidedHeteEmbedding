@@ -1,1 +1,0 @@
-user-2-campaign 10000.0 normal single 0.75 1
