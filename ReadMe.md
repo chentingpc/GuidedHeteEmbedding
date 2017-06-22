@@ -4,6 +4,9 @@ This is a CPU-based multi-thread implementation of Task-guided and Path-augmente
 
 Data format for network embedding
 -----------------
+([preprocessed
+data](https://www.dropbox.com/sh/pcb3enz1yyeg89u/AADOdDJLrhhnSSuezvJfG9oja?dl=0))
+
 **network file**
 
 each line can be either (homogeneous network):
